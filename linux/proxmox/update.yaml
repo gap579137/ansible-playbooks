@@ -6,3 +6,7 @@
   tasks:
     - name: Connection Test
       ansible.builtin.ping:
+    - name: Update all -apt
+      apt:
+        upgrade: yes
+        update_cache: yes
