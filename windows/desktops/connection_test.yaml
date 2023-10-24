@@ -11,9 +11,7 @@
         category_names: SecurityUpdates
         state: searched
         log_path: C:\ansible_wu.txt
-    - name: Install all security, critical, and rollup updates without a scheduled task
+    - name: Ensure we wait long enough for the updates to be applied during reboot
       ansible.windows.win_updates:
-        # category_names:
-        #   - SecurityUpdates
-        #   - CriticalUpdates
-        #   - UpdateRollups
+        reboot: true
+        reboot_timeout: 300
