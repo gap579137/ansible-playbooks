@@ -13,5 +13,8 @@
         log_path: C:\ansible_wu.txt
     - name: Ensure we wait long enough for the updates to be applied during reboot
       ansible.windows.win_updates:
+        reject_list:
+          - KB5031364
+          - KB5031361
         reboot: true
         reboot_timeout: 300
