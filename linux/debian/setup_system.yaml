@@ -1,0 +1,55 @@
+---
+- hosts: all
+  become: yes # to get sudo privileges
+  vars:
+    ip_map:
+      rn01: "192.1.3.171"
+      rn02: "192.1.3.172"
+      rn03: "192.1.3.173"
+      # ... and so on for all the IPs ...
+  tasks:
+    - name: Set static IP based on hostname
+      block:
+        - name: Get connection name
+          command: nmcli con show --active
+          register: active_connection
+          changed_when: False # This will always be false since we're only querying
+
+        - name: Set IP address for host
+          command: nmcli con mod "{{ active_connection.stdout_lines[0].split()[0] }}" ipv4.addresses "{{ ip_map[ansible_hostname] }}/22" ipv4.method "manual"
+          when: ansible_hostname in ip_map
+
+        - name: Restart the network connection
+          command: nmcli con down "{{ active_connection.stdout_lines[0].split()[0] }}" && nmcli con up "{{ active_connection.stdout_lines[0].split()[0] }}"
+          when: ansible_hostname in ip_map
+      when: "'Debian' in ansible_distribution or 'Ubuntu' in ansible_distribution"
+
+    - name: Modify /etc/network/interfaces
+      block:
+        - name: Comment out 'allow-hotplug ens18'
+          lineinfile:
+            path: /etc/network/interfaces
+            regexp: "^allow-hotplug ens18"
+            line: "#allow-hotplug ens18"
+        - name: Comment out 'iface ens18 inet dhcp'
+          lineinfile:
+            path: /etc/network/interfaces
+            regexp: "^iface ens18 inet dhcp"
+            line: "#iface ens18 inet dhcp"
+      when: "'Debian' in ansible_distribution or 'Ubuntu' in ansible_distribution"
+
+    - name: Install required packages
+      apt:
+        pkg:
+          - curl
+          - gnupg2
+          - ca-certificates
+          - lsb-release
+          - apt-transport-https
+          - software-properties-common
+          - wget
+          - build-essential
+        state: present
+      when: "'Debian' in ansible_distribution or 'Ubuntu' in ansible_distribution"
+
+    # Add other tasks like SNMP, LLDP, etc. here using the same pattern as above.
