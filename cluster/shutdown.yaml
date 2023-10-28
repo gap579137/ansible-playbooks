@@ -1,10 +1,9 @@
 ---
 - hosts: all
   gather_facts: no
-  become: yes
   tasks:
     - name: shutdown
-      command: /sbin/shutdown -h now
+      command: sudo /sbin/shutdown -h now
       # sudo: yes
 
     - name: wait go down
