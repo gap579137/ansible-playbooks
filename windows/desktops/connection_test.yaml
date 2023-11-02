@@ -6,14 +6,19 @@
   tasks:
     - name: Test Connection
       win_ping:
-    # - name: Ensure we wait long enough for the updates to be applied during reboot
-    #   ansible.windows.win_updates:
-    #     category_names: '*'
-    #     reject_list:
-    #       - KB5031364
-    #       - KB5031361
-    #     reboot: true
+    - name: Ensure we wait long enough for the updates to be applied during reboot
+      ansible.windows.win_updates:
+        category_names: '*'
+        reject_list:
+          - KB5031364
+          - KB5031361
+        # reboot: true
     # - name: Remove a file, if present
     #   ansible.windows.win_file:
     #     path: C:\ansible_wu.txt
     #     state: absent
+    #create another task that prints the output of the win_updates module
+    - name: Print the output of the win_updates module
+      debug:
+        var: ansible_win_updates
+    
