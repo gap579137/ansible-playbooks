@@ -6,3 +6,11 @@
   tasks:
     - name: Connection Test
       ansible.builtin.ping:
+    - name: Get Podman version
+      command: podman --version
+      register: podman_version_result
+      failed_when: podman_version_result.rc != 0
+
+    - name: Print Podman version
+      debug:
+        msg: "Podman version on {{ inventory_hostname }}: {{ podman_version_result.stdout }}"
