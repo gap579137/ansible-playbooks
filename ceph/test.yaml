@@ -10,7 +10,12 @@
       command: podman --version
       register: podman_version_result
       failed_when: podman_version_result.rc != 0
-
     - name: Print Podman version
       debug:
         msg: "Podman version on {{ inventory_hostname }}: {{ podman_version_result.stdout }}"
+    - name: Update system
+      command: dnf update -y
+      register: update_result
+      failed_when: update_result.rc != 0
+      debug:
+        msg: "Update result on {{ inventory_hostname }}: {{ update_result.stdout }}"
