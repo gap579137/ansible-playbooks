@@ -33,12 +33,3 @@
           - '!all'
           - 'network'
 
-    - name: Set MTU to 9000 on active network interfaces
-      ansible.builtin.command:
-        cmd: "ip link set dev {{ item.key }} mtu 9000"
-      loop: "{{ ansible_facts | json_query('ansible_facts.*') }}"
-      when: 
-        - item.value.active
-        - item.value.type == 'ether'
-      loop_control:
-        label: "{{ item.key }}"
