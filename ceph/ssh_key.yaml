@@ -1,0 +1,48 @@
+---
+- name: Generate SSH key pair on each node
+  hosts: all
+  gather_facts: no
+  vars:
+    ssh_key_directory: "/tmp" # Directory to store keys temporarily
+
+  tasks:
+    - name: Check for existing SSH keys on nodes
+      ansible.builtin.stat:
+        path: "{{ ssh_key_directory }}/id_rsa_{{ inventory_hostname }}.pub"
+      register: ssh_key_check
+
+    - name: Generate SSH key pair on each node
+      ansible.builtin.openssh_keypair:
+        path: "{{ ssh_key_directory }}/id_rsa_{{ inventory_hostname }}"
+        size: 2048
+      when: not ssh_key_check.stat.exists
+
+    - name: Fetch the public keys from nodes
+      ansible.builtin.fetch:
+        src: "{{ ssh_key_directory }}/id_rsa_{{ inventory_hostname }}.pub"
+        dest: "/tmp/id_rsa_{{ inventory_hostname }}.pub"
+        flat: yes
+      delegate_to: "{{ item }}"
+      loop: "{{ ansible_play_hosts }}"
+      run_once: true
+      register: fetch_results
+
+- name: Distribute public keys to all nodes
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Read public keys from files
+      ansible.builtin.slurp:
+        src: "/tmp/id_rsa_{{ item }}.pub"
+      register: slurp_public_keys
+      loop: "{{ ansible_play_hosts }}"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Distribute public keys to authorized_keys
+      ansible.builtin.authorized_key:
+        user: "{{ ansible_user }}"
+        state: present
+        key: "{{ item.content | b64decode }}"
+      loop: "{{ slurp_public_keys.results }}"
+      when: item.stat.exists
