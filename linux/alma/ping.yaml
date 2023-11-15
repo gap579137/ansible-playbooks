@@ -7,5 +7,5 @@
 
     - name: Install lm-sensors
       ansible.builtin.yum:
-        name: lm-sensors
+        name: lm_sensors
         state: present
