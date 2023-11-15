@@ -1,0 +1,29 @@
+- name: Install cockpit-sensors
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Download cockpit-sensors from GitHub
+      ansible.builtin.get_url:
+        url: https://github.com/ocristopfer/cockpit-sensors/releases/latest/download/cockpit-sensors.tar.xz
+        dest: /tmp/cockpit-sensors.tar.xz
+        mode: "0644"
+
+    - name: Extract cockpit-sensors
+      ansible.builtin.unarchive:
+        src: /tmp/cockpit-sensors.tar.xz
+        dest: /tmp/
+        remote_src: yes
+        extra_opts: [--strip-components=1]
+
+    - name: Move cockpit-sensors to the target directory
+      ansible.builtin.command:
+        cmd: mv /tmp/dist /usr/share/cockpit/sensors
+        creates: /usr/share/cockpit/sensors
+
+    - name: Clean up downloaded and extracted files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /tmp/cockpit-sensors
+        - /tmp/cockpit-sensors.tar.xz
