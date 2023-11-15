@@ -1,6 +1,7 @@
 ---
 - name: Update all packages on Fedora servers
   hosts: all
+  gather_facts: true
   tasks:
     - name: Upgrade all packages to the latest version
       dnf:
