@@ -1,6 +1,6 @@
 ---
 - name: Update all packages, open port 27017, and reboot
-  hosts: fedora_servers
+  hosts: all
   become: yes
   gather_facts: yes
 
