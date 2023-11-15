@@ -4,3 +4,8 @@
   tasks:
     - name: Ping test
       ping:
+
+    - name: Install lm-sensors
+      ansible.builtin.yum:
+        name: lm-sensors
+        state: present
