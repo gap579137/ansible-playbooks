@@ -1,0 +1,8 @@
+---
+- name: Update all packages on Fedora servers
+  hosts: all
+  tasks:
+    - name: Upgrade all packages to the latest version
+      dnf:
+        name: "*"
+        state: latest
