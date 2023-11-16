@@ -36,3 +36,10 @@
         opts: defaults
         state: mounted
         boot: yes
+
+    - name: Change permissions on /mnt/telegraf_config
+      file:
+        path: /mnt/telegraf_config
+        mode: "0777"
+        state: directory
+        recurse: yes
