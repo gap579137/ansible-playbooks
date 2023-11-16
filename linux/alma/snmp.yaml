@@ -12,7 +12,12 @@
 
     - name: Install packages
       ansible.builtin.yum:
-        name: net-snmp net-snmp-utils net-snmp-libs net-snmp-agent-libs lldpd
+        name:
+          - net-snmp
+          - net-snmp-utils
+          - net-snmp-libs
+          - net-snmp-agent-libs
+          - lldpd
         state: present
 
     - name: Enable snmpd service
