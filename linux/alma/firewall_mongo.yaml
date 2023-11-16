@@ -1,5 +1,5 @@
 ---
-- name: Update all packages, open port 27017, and reboot
+- name: Update all packages, open port 161, and reboot
   hosts: all
   become: yes
   gather_facts: yes
@@ -12,14 +12,14 @@
 
     - name: Open TCP port 27017
       firewalld:
-        port: 27017/tcp
+        port: 161/tcp
         permanent: true
         state: enabled
         immediate: true
 
     - name: Open UDP port 27017
       firewalld:
-        port: 27017/udp
+        port: 161/udp
         permanent: true
         state: enabled
         immediate: true

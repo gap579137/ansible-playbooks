@@ -1,0 +1,132 @@
+---
+- name: Update all packages, open port 161, and reboot
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Upgrade all packages to the latest version
+      dnf:
+        name: "*"
+        state: latest
+
+    - name: Install packages
+      ansible.builtin.yum:
+        name: net-snmp net-snmp-utils net-snmp-libs net-snmp-agent-libs lldpd
+        state: present
+
+    - name: Enable snmpd service
+      ansible.builtin.service:
+        name: snmpd
+        state: started
+        enabled: yes
+
+    - name: Configure snmpd service
+      ansible.builtin.copy:
+        dest: /etc/snmp/snmpd.conf
+        content: |
+          # Access Control
+          rocommunity public
+          rwcommunity private
+          agentAddress udp:161,udp6:[::1]:161
+          syslocation "Server Room"
+          syscontact garrettpost@fbcad.org
+          # System Information
+          sysDescr Linux
+          sysObjectID .
+
+    - name: Enable lldpd service
+      ansible.builtin.service:
+        name: lldpd
+        state: started
+        enabled: yes
+
+    - name: Configure lldpd service
+      ansible.builtin.copy:
+        dest: /etc/lldpd.conf
+        content: |
+          configure lldp portidsubtype ifname
+          configure lldp med fast-start
+          configure lldp med location civic-addr country US
+          configure lldp med location civic-addr city Rosenberg
+          configure lldp med location civic-addr street "2801 B.F. Terry Blvd"
+          configure lldp med location civic-addr postal-code 77471
+          configure lldp med location civic-addr building "Fort Bend Central Appraisal District"
+          configure lldp med location civic-addr floor "1st Floor"
+          configure lldp med location civic-addr room "Server Room"
+
+    - name: Add InfluxData repo
+      blockinfile:
+        path: /etc/yum.repos.d/influxdata.repo
+        block: |
+          [influxdata]
+          name = InfluxData Repository - Stable
+          baseurl = https://repos.influxdata.com/stable/$basearch/main
+          enabled = 1
+          gpgcheck = 1
+          gpgkey = https://repos.influxdata.com/influxdata-archive_compat.key
+        create: yes
+
+    - name: Install Telegraf
+      yum:
+        name: telegraf
+        state: present
+
+    - name: Export INFLUX_TOKEN environment variable
+      lineinfile:
+        path: /etc/environment
+        line: 'INFLUX_TOKEN="pzLTex0APTh6d1IVhIIWsHCp4A35j-nz_VVSGWFDbJJibke21a4I2HE06vp1Iy5Ahb2jIoNLcQ_XZjCzi4lEHw=="'
+        create: yes
+
+    - name: Run Telegraf configuration
+      command: telegraf --config http://192.1.3.226:8086/api/v2/telegrafs/0c2221d7bf64e000
+
+    - name: Enable Telegraf service
+      systemd:
+        name: telegraf
+        enabled: yes
+        state: started
+
+    - name: Open Telegraf StatsD port (8125/udp)
+      firewalld:
+        port: 8125/udp
+        permanent: yes
+        state: enabled
+        immediate: yes
+
+    - name: Open Telegraf port 8092 (tcp)
+      firewalld:
+        port: 8092/tcp
+        permanent: yes
+        state: enabled
+        immediate: yes
+
+    - name: Open Telegraf port 8094 (tcp)
+      firewalld:
+        port: 8094/tcp
+        permanent: yes
+        state: enabled
+        immediate: yes
+
+    - name: Open TCP port 161
+      firewalld:
+        port: 161/tcp
+        permanent: true
+        state: enabled
+        immediate: true
+
+    - name: Open UDP port 161
+      firewalld:
+        port: 161/udp
+        permanent: true
+        state: enabled
+        immediate: true
+
+    - name: Reboot the server
+      ansible.builtin.reboot:
+        msg: "Rebooting for system updates and firewall changes"
+        connect_timeout: 5
+        reboot_timeout: 300
+        pre_reboot_delay: 0
+        post_reboot_delay: 30
+        test_command: whoami
