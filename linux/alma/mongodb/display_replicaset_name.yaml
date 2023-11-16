@@ -1,0 +1,19 @@
+- hosts: all
+  become: true
+  tasks:
+    - name: Slurp the mongod.conf file
+      slurp:
+        src: /etc/mongod.conf
+      register: mongod_conf
+
+    - name: Decode the content
+      set_fact:
+        mongod_conf_content: "{{ mongod_conf['content'] | b64decode }}"
+
+    - name: Extract replSetName value
+      set_fact:
+        repl_set_name: "{{ mongod_conf_content | regex_search('replSetName:\\s*([^\\s]+)', '\\1') | first }}"
+
+    - name: Display replSetName
+      debug:
+        msg: "The replSetName is {{ repl_set_name }}"
