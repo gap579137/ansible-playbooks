@@ -8,6 +8,20 @@
         name: nfs-utils
         state: present
 
+    - name: Add NFS ports to firewall
+      firewalld:
+        port: "{{ item }}"
+        permanent: yes
+        state: enabled
+        immediate: yes
+      with_items:
+        - 111/tcp
+        - 111/udp
+        - 2049/tcp
+        - 2049/udp
+        - 32769/tcp
+        - 32769/udp
+
     - name: Create a directory for Telegraf config
       file:
         path: /mnt/telegraf_config
