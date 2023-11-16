@@ -1,9 +1,9 @@
 - hosts: all
   tasks:
     - name: Stop MongoDB service
-          service:
-            name: mongod
-            state: stopped
+      service:
+        name: mongod
+        state: stopped
 
     - name: Set replica set and shard names
       set_fact:
