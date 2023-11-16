@@ -1,0 +1,8 @@
+- name: Configure NFS and Mount for AlmaLinux
+  hosts: all
+  become: yes
+  tasks:
+    - name: Restart telegraf service
+      service:
+        name: telegraf
+        state: restarted
