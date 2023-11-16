@@ -23,7 +23,7 @@ net:
   bindIp: 0.0.0.0
 
 replication:
-  replSetName: "{{ repl_set_name }}"
+  replSetName: {{ repl_set_name }}
 
 sharding:
   clusterRole: shardsvr
