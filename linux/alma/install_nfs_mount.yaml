@@ -1,0 +1,24 @@
+---
+- name: Configure NFS and Mount for AlmaLinux
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install nfs-utils
+      yum:
+        name: nfs-utils
+        state: present
+
+    - name: Create a directory for Telegraf config
+      file:
+        path: /mnt/telegraf_config
+        state: directory
+        mode: "0755"
+
+    - name: Mount NFS share
+      mount:
+        path: /mnt/telegraf_config
+        src: 192.1.0.6:/General/telegraf/mongocluster
+        fstype: nfs
+        opts: defaults
+        state: mounted
+        boot: yes
