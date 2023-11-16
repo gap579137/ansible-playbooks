@@ -1,4 +1,4 @@
-- hosts: all
+- hosts: rs1
   tasks:
     - name: Stop MongoDB service
       service:
@@ -7,13 +7,7 @@
 
     - name: Set replica set and shard names
       set_fact:
-        repl_set_name: rs{{ group_names[0][-1] }}
-
-    - name: Configure mongod.conf
-      template:
-        src: mongod.conf.j2
-        dest: /etc/mongod.conf
-      notify: restart mongod
+        repl_set_name: rs1
 
   handlers:
     - name: restart mongod
