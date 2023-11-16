@@ -1,0 +1,23 @@
+- hosts: all
+  tasks:
+    - name: Stop MongoDB service
+          service:
+            name: mongod
+            state: stopped
+
+    - name: Set replica set and shard names
+      set_fact:
+        repl_set_name: "rs{{ group_names[0][-1] }}"
+        shard_name: "shard{{ group_names[0][-1] }}"
+
+    - name: Configure mongod.conf
+      template:
+        src: mongod.conf.j2
+        dest: /etc/mongod.conf
+      notify: restart mongod
+
+  handlers:
+    - name: restart mongod
+      service:
+        name: mongod
+        state: restarted
