@@ -43,3 +43,15 @@
         mode: "0777"
         state: directory
         recurse: yes
+
+    - name: Modify ExecStart in telegraf.service
+      lineinfile:
+        path: /usr/lib/systemd/system/telegraf.service
+        regexp: "^ExecStart=/usr/bin/telegraf -config /etc/telegraf/telegraf.conf -config-directory /etc/telegraf/telegraf.d"
+        line: "ExecStart=/usr/bin/telegraf -config /etc/telegraf/telegraf.conf -config-directory /mnt/telegraf_config $TELEGRAF_OPTS"
+        state: present
+        backrefs: yes
+
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
