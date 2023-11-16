@@ -1,0 +1,13 @@
+---
+- name: Add SNMP to firewall rules
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Add SNMP to firewall rules
+      firewalld:
+        service: snmp
+        permanent: yes
+        state: enabled
+        immediate: yes
