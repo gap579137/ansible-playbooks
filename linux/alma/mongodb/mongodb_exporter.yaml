@@ -26,7 +26,7 @@
         msg: "{{ ls_output.stdout_lines }}"
 
     - name: Move mongodb_exporter binary to /usr/local/bin/
-      command: mv /tmp/mongodb_exporter-0.39.0.linux-amd64/mongodb_exporter /usr/local/bin/mongodb_exporter
+      command: mv /tmp/mongodb_exporter/mongodb_exporter-0.39.0.linux-amd64 /usr/local/bin/mongodb_exporter
 
     - name: Set up MongoDB Exporter service
       copy:
