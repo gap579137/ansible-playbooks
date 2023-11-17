@@ -17,6 +17,14 @@
         dest: /tmp/mongodb-exporter/
         remote_src: yes
 
+    - name: List files in /tmp/mongodb-exporter
+      command: ls -lah /tmp/mongodb-exporter/
+      register: ls_output
+
+    - name: Show ls output
+      debug:
+        msg: "{{ ls_output.stdout_lines }}"
+
     - name: Move mongodb_exporter binary to /usr/local/bin/
       command: mv /tmp/mongodb-exporter/mongodb_exporter /usr/local/bin/mongodb_exporter
 
