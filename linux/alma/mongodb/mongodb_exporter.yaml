@@ -1,0 +1,54 @@
+- hosts: all
+  become: true
+  tasks:
+    - name: Create mongodb-exporter directory
+      file:
+        path: /tmp/mongodb-exporter
+        state: directory
+
+    - name: Download mongodb_exporter tarball
+      get_url:
+        url: https://github.com/percona/mongodb_exporter/releases/download/v0.39.0/mongodb_exporter-0.39.0.linux-amd64.tar.gz
+        dest: /tmp/mongodb-exporter/mongodb_exporter-0.39.0.linux-amd64.tar.gz
+
+    - name: Extract mongodb_exporter
+      unarchive:
+        src: /tmp/mongodb-exporter/mongodb_exporter-0.39.0.linux-amd64.tar.gz
+        dest: /tmp/mongodb-exporter/
+        remote_src: yes
+
+    - name: Move mongodb_exporter binary to /usr/local/bin/
+      command: mv /tmp/mongodb-exporter/mongodb_exporter /usr/local/bin/mongodb_exporter
+
+    - name: Set up MongoDB Exporter service
+      copy:
+        dest: /lib/systemd/system/mongodb_exporter.service
+        content: |
+          [Unit]
+          Description=MongoDB Exporter
+          User=prometheus
+
+          [Service]
+          Type=simple
+          Restart=always
+          ExecStart=/usr/local/bin/mongodb_exporter --mongodb.uri=mongodb://127.0.0.1:27017 --web.listen-address=0.0.0.0:9094 --collect-all
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Open TCP/UDP port 9094
+      firewalld:
+        port: 9094/tcp
+        permanent: yes
+        state: enabled
+        immediate: yes
+
+    - name: Start and enable mongodb_exporter service
+      systemd:
+        name: mongodb_exporter.service
+        state: started
+        enabled: yes
