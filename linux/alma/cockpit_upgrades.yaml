@@ -1,0 +1,16 @@
+- name: Cockpit
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    cockpit_packages:
+      - cockpit-pcp
+
+  tasks:
+    - name: Install cockpit packages
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items: "{{ cockpit_packages }}"
+      when: cockpit_packages is defined
