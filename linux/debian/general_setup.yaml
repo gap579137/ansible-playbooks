@@ -1,0 +1,54 @@
+---
+- name: Setup Debian System with NVM and Node.js
+  hosts: your_debian_hosts
+  become: yes
+  vars:
+    node_version: "21.2.0" # You can change this to your desired Node.js version
+
+  tasks:
+    - name: Update apt repositories and upgrade packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install cockpit-pcp and lm-sensors
+      apt:
+        name:
+          - cockpit-pcp
+          - lm-sensors
+        state: present
+
+    - name: Download cockpit-sensors.deb
+      get_url:
+        url: https://github.com/ocristopfer/cockpit-sensors/releases/latest/download/cockpit-sensors.deb
+        dest: /tmp/cockpit-sensors.deb
+
+    - name: Install cockpit-sensors.deb
+      apt:
+        deb: /tmp/cockpit-sensors.deb
+
+    - name: Install dependencies for nvm
+      apt:
+        name:
+          - curl
+          - build-essential
+          - libssl-dev
+          - gnupg2
+          - ca-certificates
+          - lsb-release
+          - apt-transport-https
+          - software-properties-common
+          - wget
+        state: present
+
+    - name: Install NVM (Node Version Manager)
+      shell: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+      args:
+        creates: "{{ ansible_env.HOME }}/.nvm/nvm.sh"
+
+    - name: Install Node.js using NVM
+      shell: |
+        source {{ ansible_env.HOME }}/.nvm/nvm.sh
+        nvm install {{ node_version }}
+      args:
+        executable: /bin/bash
