@@ -1,6 +1,6 @@
 ---
 - name: Setup Debian System with NVM and Node.js
-  hosts: your_debian_hosts
+  hosts: all
   become: yes
   vars:
     node_version: "21.2.0" # You can change this to your desired Node.js version
