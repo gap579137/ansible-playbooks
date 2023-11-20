@@ -1,6 +1,6 @@
 ---
 - name: Execute Veeam Enterprise Manager Script
-  hosts: your_target_host
+  hosts: all
 
   tasks:
     - name: Run Veeam Enterprise Manager Script
