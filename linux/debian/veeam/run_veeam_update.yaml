@@ -1,0 +1,11 @@
+---
+- name: Execute Veeam Enterprise Manager Script
+  hosts: your_target_host
+
+  tasks:
+    - name: Run Veeam Enterprise Manager Script
+      shell: |
+        cd /home/administrator 
+        ./veeam_enterprisemanager.sh
+      args:
+        executable: /bin/bash
