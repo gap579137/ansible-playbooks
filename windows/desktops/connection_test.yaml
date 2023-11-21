@@ -11,7 +11,13 @@
         display_seconds: 60
         msg: Automated upgrade about to start. Please save all your work and lock your computer. Thank you!
 
-    - name: Install all updates and reboot as many times as needed
+    - name: Search-only, return list of found updates (if any), log to C:\ansible_wu.txt
       ansible.windows.win_updates:
-        category_names: "*"
-        reboot: true
+        category_names: SecurityUpdates
+        state: searched
+        log_path: C:\ansible_wu.txt
+
+    # - name: Install all updates and reboot as many times as needed
+    #   ansible.windows.win_updates:
+    #     category_names: "*"
+    #     reboot: true
