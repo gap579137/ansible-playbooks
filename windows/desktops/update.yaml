@@ -1,4 +1,4 @@
-- hosts: s1
+- hosts: Servers
   become: false
   gather_facts: true
   tasks:
@@ -30,7 +30,7 @@
         timeout: 300 # adjust the timeout as needed
       run_once: true
 
-- hosts: s2, s3, s4, s5
+- hosts: Desktops, s3, s4, s5
   become: false
   gather_facts: true
   tasks:
