@@ -1,4 +1,4 @@
-- hosts: s1
+- hosts: Servers
   become: false
   gather_facts: true
   tasks:
@@ -17,38 +17,6 @@
         log_path: C:\ansible_wu.txt
 
     - name: Install all updates and reboot on s1 as many times as needed
-      ansible.windows.win_updates:
-        category_names: "*"
-        reboot: true
-
-    - name: Wait for s1 to come back online
-      local_action:
-        module: wait_for
-        host: "{{ ansible_host }}"
-        port: 5985 # WinRM port, change if different in your setup
-        state: started
-        timeout: 300 # adjust the timeout as needed
-      run_once: true
-
-- hosts: s2, s3, s4, s5
-  become: false
-  gather_facts: true
-  tasks:
-    - name: Test Connection on other servers
-      win_ping:
-
-    - name: Warn logged in users on other servers of impending upgrade
-      community.windows.win_msg:
-        display_seconds: 60
-        msg: Automated upgrade about to start. Please save all your work and lock your computer. Thank you!
-
-    - name: Search-only on other servers, return list of found updates (if any), log to C:\ansible_wu.txt
-      ansible.windows.win_updates:
-        category_names: SecurityUpdates
-        state: searched
-        log_path: C:\ansible_wu.txt
-
-    - name: Install all updates and reboot on other servers as many times as needed
       ansible.windows.win_updates:
         category_names: "*"
         reboot: true
