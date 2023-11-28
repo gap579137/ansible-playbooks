@@ -1,6 +1,6 @@
 ---
 - name: Configure and Install Zscaler Private Access Connector
-  hosts: your_target_hosts
+  hosts: all
   become: yes # to perform tasks requiring sudo
 
   tasks:
