@@ -34,7 +34,7 @@
     - name: Add provision key to the file
       copy:
         dest: /opt/zscaler/var/provision_key
-        content: "3|api.private.zscaler.com|3Nmfuv0hSHz2HR4vZQ8FfWzElY7VDO/OS3yj9AqBKITuhoD+KfOqZrPpuZzfzRbrfOE8TFx6e81PRdWCJotP0X3h1rkBqsD2I9wkzcSfPz+OyJMEWDJqW1/okZ6xf0H/sdY5UrVs4co6FWNJADoQrNdcbuntNE4Sifun2WFN+/ifuaXxqLNEuvJs10H4tw/DkcXH+mXOjFp3vkDMV2kY8nQp4o5Nn6gSlIWzLMXApFKwKqtWPxUz2TXpBV/OpGYru1wroAF9PBkgG2w7dznN7SSGG4H5RxBwTYlOYRCwasjdEV7qzSeDCXEwMhAyR9weudzArgthgfiW0nD6X7ZVfMLzxU3B3EghhN9/w1ENUtCSej0Xwf02dEPMuLVdOr1S"
+        content: "{{ zscaler_provision_key }}"
 
     - name: Start zpa-connector service
       systemd:
