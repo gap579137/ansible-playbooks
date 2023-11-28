@@ -3,7 +3,7 @@
   tasks:
     - name: Disable SELinux
       selinux:
-        state: permissive
+        state: disabled
 
     - name: Reboot the server
       ansible.builtin.reboot:
