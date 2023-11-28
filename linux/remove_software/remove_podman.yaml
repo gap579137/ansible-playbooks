@@ -1,0 +1,9 @@
+---
+- name: Remove podman
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Remove podman
+      package:
+        name: podman
+        state: absent
