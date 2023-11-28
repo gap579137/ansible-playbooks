@@ -1,7 +1,7 @@
 - name: Install multiple packages and configure services
   hosts: all
   gather_facts: true
-  strategy: free
+  # strategy: free
 
   vars:
     cockpit_packages:
