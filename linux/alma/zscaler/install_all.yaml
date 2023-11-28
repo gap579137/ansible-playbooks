@@ -1,0 +1,163 @@
+- name: Install multiple packages and configure services
+  hosts: all
+  gather_facts: true
+
+  vars:
+    cockpit_packages:
+      - cockpit-pcp
+      - net-snmp
+      - net-snmp-utils
+      - net-snmp-libs
+      - net-snmp-agent-libs
+      - lldpd
+    node_exporter_version: "1.7.0"
+    node_exporter_filename: "node_exporter-{{ node_exporter_version }}.linux-amd64"
+
+  tasks:
+    - name: Install cockpit packages
+      package:
+        name: "{{ cockpit_packages }}"
+        state: present
+      when: cockpit_packages is defined
+
+    - name: Manage cockpit-sensors
+      block:
+        - name: Download cockpit-sensors from GitHub
+          ansible.builtin.get_url:
+            url: https://github.com/ocristopfer/cockpit-sensors/releases/latest/download/cockpit-sensors.tar.xz
+            dest: /tmp/cockpit-sensors.tar.xz
+            mode: "0644"
+
+        - name: Extract cockpit-sensors
+          ansible.builtin.unarchive:
+            src: /tmp/cockpit-sensors.tar.xz
+            dest: /tmp/
+            remote_src: yes
+            extra_opts: [--strip-components=1]
+
+        - name: Move cockpit-sensors to the target directory
+          ansible.builtin.command:
+            cmd: mv /tmp/dist /usr/share/cockpit/sensors
+            creates: /usr/share/cockpit/sensors
+
+        - name: Clean up downloaded and extracted files
+          ansible.builtin.file:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - /tmp/cockpit-sensors.tar.xz
+            - /tmp/dist
+
+    - name: Configure and manage firewall
+      block:
+        - name: Add SNMP to firewall rules
+          firewalld:
+            service: snmp
+            permanent: yes
+            state: enabled
+            immediate: yes
+
+        - name: Open specified ports in firewalld
+          firewalld:
+            port: "{{ item }}"
+            permanent: yes
+            state: enabled
+            immediate: yes
+          loop:
+            - 9100/tcp
+            - 9100/udp
+
+    - name: Manage node_exporter
+      block:
+        - name: Download node_exporter
+          get_url:
+            url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/{{ node_exporter_filename }}.tar.gz"
+            dest: "/tmp/node_exporter.tar.gz"
+
+        - name: Extract node_exporter
+          unarchive:
+            src: /tmp/node_exporter.tar.gz
+            dest: /tmp/
+            remote_src: yes
+
+        - name: Move node_exporter binary to /usr/local/bin
+          command: mv "/tmp/{{ node_exporter_filename }}/node_exporter" /usr/local/bin/node_exporter
+
+        - name: Create and manage node_exporter service
+          ansible.builtin.copy:
+            dest: /etc/systemd/system/node_exporter.service
+            content: |
+              [Unit]
+              Description=Node Exporter
+
+              [Service]
+              User=administrator
+              Group=administrator
+              ExecStart=/usr/local/bin/node_exporter
+
+              [Install]
+              WantedBy=multi-user.target
+          notify: Restart node_exporter
+
+    - name: Configure and manage SNMP and LLDP services
+      block:
+        - name: Install and configure snmpd service
+          ansible.builtin.service:
+            name: snmpd
+            state: stopped
+            enabled: yes
+          notify: Restart snmpd
+
+        - name: Configure snmpd service
+          ansible.builtin.copy:
+            dest: /etc/snmp/snmpd.conf
+            content: |
+              # Access Control
+              rocommunity public
+              rwcommunity private
+              agentAddress udp:161,udp6:[::1]:161
+              syslocation "Server Room"
+              syscontact garrettpost@fbcad.org
+              # System Information
+              sysDescr Linux
+              sysObjectID .
+
+        - name: Install and configure lldpd service
+          ansible.builtin.service:
+            name: lldpd
+            state: stopped
+            enabled: yes
+          notify: Restart lldpd
+
+        - name: Configure lldpd service
+          ansible.builtin.copy:
+            dest: /etc/lldpd.conf
+            content: |
+              configure lldp portidsubtype ifname
+              configure lldp med fast-start
+              configure lldp med location civic-addr country US
+              configure lldp med location civic-addr city Rosenberg
+              configure lldp med location civic-addr street "2801 B.F. Terry Blvd"
+              configure lldp med location civic-addr postal-code 77471
+              configure lldp med location civic-addr building "Fort Bend Central Appraisal District"
+              configure lldp med location civic-addr floor "1st Floor"
+              configure lldp med location civic-addr room "Server Room"
+
+  handlers:
+    - name: Restart node_exporter
+      systemd:
+        name: node_exporter
+        state: restarted
+        enabled: yes
+
+    - name: Restart snmpd
+      ansible.builtin.service:
+        name: snmpd
+        state: restarted
+        enabled: yes
+
+    - name: Restart lldpd
+      ansible.builtin.service:
+        name: lldpd
+        state: restarted
+        enabled: yes
