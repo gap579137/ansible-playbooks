@@ -1,0 +1,19 @@
+---
+- name: Open ports for Zscaler Private Access Connector
+  hosts: all
+  become: yes # to perform tasks requiring sudo
+
+  tasks:
+    - name: Open specified ports in firewalld
+      firewalld:
+        port: "{{ item }}"
+        permanent: yes
+        state: enabled
+        immediate: yes
+      loop:
+        - 80/tcp
+        - 80/udp
+        - 443/tcp
+        - 443/udp
+        - 8080/tcp
+        - 8080/udp
