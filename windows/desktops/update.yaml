@@ -21,3 +21,18 @@
       ansible.windows.win_updates:
         category_names: "*"
         reboot: true
+
+    - name: Get Last Boot Time
+      ansible.windows.win_shell: |
+        $lastBootUpTime = Get-CimInstance -ClassName win32_operatingsystem | Select-Object -ExpandProperty LastBootUpTime
+        $uptime = (Get-Date) - $lastBootUpTime
+        return $uptime.TotalDays
+      register: uptime
+
+    - name: Display Server Uptime
+      ansible.builtin.debug:
+        msg: "Server uptime is {{ uptime.stdout | float | round(2) }} days."
+
+    - name: Reboot Server if Uptime is Over 3 Days
+      ansible.windows.win_reboot:
+      when: uptime.stdout | float > 3
