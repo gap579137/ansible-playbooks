@@ -1,22 +1,38 @@
-- hosts: Servers
+- hosts: all
   become: false
   gather_facts: true
+
   tasks:
-    - name: Test Connection on s1
+    - name: Test Connection on servers
       win_ping:
 
-    - name: Warn logged in users on s1 of impending upgrade
+    - name: Warn logged in users on servers of impending upgrade
       community.windows.win_msg:
         display_seconds: 60
-        msg: Automated upgrade about to start on s1. Please save all your work and lock your computer. Thank you!
+        msg: Automated upgrade about to start on servers. Please save all your work and lock your computer. Thank you!
 
-    - name: Search-only on s1, return list of found updates (if any), log to C:\ansible_wu.txt
+    - name: Search-only on servers, return list of found updates (if any), log to C:\ansible_wu.txt
       ansible.windows.win_updates:
         category_names: SecurityUpdates
         state: searched
         log_path: C:\ansible_wu.txt
 
-    - name: Install all updates and reboot on s1 as many times as needed
+    - name: Install all updates and reboot on servers as many times as needed
       ansible.windows.win_updates:
         category_names: "*"
         reboot: true
+
+    - name: Get Last Boot Time
+      ansible.windows.win_shell: |
+        $lastBootUpTime = Get-CimInstance -ClassName win32_operatingsystem | Select-Object -ExpandProperty LastBootUpTime
+        $uptime = (Get-Date) - $lastBootUpTime
+        return $uptime.TotalDays
+      register: uptime
+
+    - name: Display Server Uptime
+      ansible.builtin.debug:
+        msg: "Server uptime is {{ uptime.stdout | float | round(2) }} days."
+
+    - name: Reboot Server if Uptime is Over 3 Days
+      ansible.windows.win_reboot:
+      when: uptime.stdout | float > 3
