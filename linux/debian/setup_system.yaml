@@ -61,12 +61,14 @@
         label: "{{ item }}"
       when: package_install_result.results | selectattr('item', 'equalto', item) | map(attribute='changed') | first
 
-    - name: Download and install cockpit-sensors.deb
-      apt:
-        deb: /tmp/cockpit-sensors.deb
+    - name: Download cockpit-sensors.deb
       get_url:
         url: https://github.com/ocristopfer/cockpit-sensors/releases/latest/download/cockpit-sensors.deb
         dest: /tmp/cockpit-sensors.deb
+
+    - name: Install cockpit-sensors.deb
+      apt:
+        deb: /tmp/cockpit-sensors.deb
 
     - name: Configure SNMP Community to 'public'
       blockinfile:
