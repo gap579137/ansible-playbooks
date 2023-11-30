@@ -43,7 +43,7 @@
         name: podman
         state: absent
 
-    - name: Install each package and display debug message
+    - name: Install each package
       apt:
         name: "{{ item }}"
         state: present
@@ -52,10 +52,14 @@
       changed_when: package_install_result is changed
       notify:
         - Restart SNMP Service
+
+    - name: Display debug message for installed package
       debug:
         msg: "Package '{{ item }}' has been installed."
+      loop: "{{ packages }}"
       loop_control:
         label: "{{ item }}"
+      when: package_install_result.results | selectattr('item', 'equalto', item) | map(attribute='changed') | first
 
     - name: Download and install cockpit-sensors.deb
       apt:
