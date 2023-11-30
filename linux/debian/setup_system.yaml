@@ -1,55 +1,97 @@
----
-- hosts: all
-  become: yes # to get sudo privileges
+- name: Setup Debian System and install NVM, Node.js, SNMP, and LLDPD
+  hosts: all
+  become: yes
   vars:
-    ip_map:
-      rn01: "192.1.3.171"
-      rn02: "192.1.3.172"
-      rn03: "192.1.3.173"
-      # ... and so on for all the IPs ...
+    node_version: "21.2.0" # Change to your desired Node.js version
+    packages:
+      - cockpit-pcp
+      - lm-sensors
+      - snmpd
+      - snmp
+      - lldpd
+      - curl
+      - build-essential
+      - libssl-dev
+      - gnupg2
+      - ca-certificates
+      - lsb-release
+      - apt-transport-https
+      - software-properties-common
+      - wget
+
+  handlers:
+    - name: Restart SNMP Service
+      systemd:
+        name: snmpd
+        state: restarted
+        enabled: yes
+
+    - name: Start LLDPD Service
+      systemd:
+        name: lldpd
+        state: started
+        enabled: yes
+
   tasks:
-    - name: Set static IP based on hostname
-      block:
-        - name: Get connection name
-          command: nmcli con show --active
-          register: active_connection
-          changed_when: False # This will always be false since we're only querying
-
-        - name: Set IP address for host
-          command: nmcli con mod "{{ active_connection.stdout_lines[0].split()[0] }}" ipv4.addresses "{{ ip_map[ansible_hostname] }}/22" ipv4.method "manual"
-          when: ansible_hostname in ip_map
-
-        - name: Restart the network connection
-          command: nmcli con down "{{ active_connection.stdout_lines[0].split()[0] }}" && nmcli con up "{{ active_connection.stdout_lines[0].split()[0] }}"
-          when: ansible_hostname in ip_map
-      when: "'Debian' in ansible_distribution or 'Ubuntu' in ansible_distribution"
-
-    - name: Modify /etc/network/interfaces
-      block:
-        - name: Comment out 'allow-hotplug ens18'
-          lineinfile:
-            path: /etc/network/interfaces
-            regexp: "^allow-hotplug ens18"
-            line: "#allow-hotplug ens18"
-        - name: Comment out 'iface ens18 inet dhcp'
-          lineinfile:
-            path: /etc/network/interfaces
-            regexp: "^iface ens18 inet dhcp"
-            line: "#iface ens18 inet dhcp"
-      when: "'Debian' in ansible_distribution or 'Ubuntu' in ansible_distribution"
-
-    - name: Install required packages
+    - name: Update apt repositories and upgrade packages
       apt:
-        pkg:
-          - curl
-          - gnupg2
-          - ca-certificates
-          - lsb-release
-          - apt-transport-https
-          - software-properties-common
-          - wget
-          - build-essential
-        state: present
-      when: "'Debian' in ansible_distribution or 'Ubuntu' in ansible_distribution"
+        update_cache: yes
+        upgrade: dist
 
-    # Add other tasks like SNMP, LLDP, etc. here using the same pattern as above.
+    - name: Remove podman
+      package:
+        name: podman
+        state: absent
+
+    - name: Install each package and display debug message
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ packages }}"
+      register: package_install_result
+      changed_when: package_install_result is changed
+      notify:
+        - Restart SNMP Service
+      debug:
+        msg: "Package '{{ item }}' has been installed."
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Download and install cockpit-sensors.deb
+      apt:
+        deb: /tmp/cockpit-sensors.deb
+      get_url:
+        url: https://github.com/ocristopfer/cockpit-sensors/releases/latest/download/cockpit-sensors.deb
+        dest: /tmp/cockpit-sensors.deb
+
+    - name: Configure SNMP Community to 'public'
+      blockinfile:
+        path: /etc/snmp/snmpd.conf
+        block: |
+          rocommunity public
+        create: yes
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+      notify: Restart SNMP Service
+
+    - name: Check if NVM is installed
+      stat:
+        path: "{{ ansible_env.HOME }}/.nvm/nvm.sh"
+      register: nvm_installed
+
+    - name: Install NVM (Node Version Manager)
+      shell: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+      when: not nvm_installed.stat.exists
+
+    - name: Install Node.js using NVM
+      shell: |
+        source {{ ansible_env.HOME }}/.nvm/nvm.sh
+        nvm install {{ node_version }}
+      args:
+        executable: /bin/bash
+      when: not nvm_installed.stat.exists
+
+    - name: Enable and Start LLDPD Service
+      systemd:
+        name: lldpd
+        state: started
+        enabled: yes
