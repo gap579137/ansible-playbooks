@@ -11,16 +11,40 @@
         display_seconds: 60
         msg: Automated upgrade about to start on servers. Please save all your work and lock your computer. Thank you!
 
-    - name: Search-only on servers, return list of found updates (if any), log to C:\ansible_wu.txt
-      ansible.windows.win_updates:
-        category_names: SecurityUpdates
-        state: searched
-        log_path: C:\ansible_wu.txt
+    - block:
+        - name: Search-only on servers, return list of found updates (if any), log to C:\ansible_wu.txt
+          ansible.windows.win_updates:
+            category_names: SecurityUpdates
+            state: searched
+            log_path: C:\ansible_wu.txt
 
-    - name: Install all updates and reboot on servers as many times as needed
-      ansible.windows.win_updates:
-        category_names: "*"
-        reboot: true
+        - name: Install all updates and reboot on servers as many times as needed
+          ansible.windows.win_updates:
+            category_names: "*"
+            reboot: true
+
+      when: "'Orion' not in group_names"
+
+    - block:
+        - name: Wait for fboriondb2 to be back up
+          ansible.windows.win_wait_for:
+            host: "fboriondb2.fbcad.org"
+            port: 1433 # Assuming MSSQL is using the default port
+            timeout: 600 # Time in seconds to wait for the server to be up
+
+        - name: Check if MSSQLSERVER service is started on fboriondb2
+          ansible.windows.win_service:
+            name: MSSQLSERVER
+            state: started
+          register: mssql_service_status
+
+        - name: Install updates on Orion group after fboriondb2 is back and MSSQLSERVER is running
+          ansible.windows.win_updates:
+            category_names: "*"
+            reboot: true
+          when: mssql_service_status.state == "started"
+
+      when: "'Orion' in group_names"
 
     - name: Get Last Boot Time
       ansible.windows.win_shell: |
