@@ -29,9 +29,9 @@
         state: absent
 
     # Uninstall graylog
-    - name: Uninstall graylog
+    - name: Uninstall graylog-server
       package:
-        name: graylog
+        name: graylog-server
         state: absent
 
     # Uninstall opensearch
