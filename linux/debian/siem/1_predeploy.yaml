@@ -47,7 +47,7 @@
 
     - name: Apply sysctl changes
       become: yes  # This is to ensure that the task is run with sudo privileges
-      shell: sysctl -p
+      command: sysctl -p
       args:
         warn: false  # This is to prevent Ansible from displaying a warning about using 'shell' instead of 'command'
 
