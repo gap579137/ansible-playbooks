@@ -5,20 +5,20 @@
   tasks:
     - name: Download Wazuh Agent and Sysmon
       win_get_url:
-        url: "\\192.1.0.6\General\wazuh\wazuh-agent.msi"
-        dest: "C:\Temp\wazuh-agent.msi"
+        url: "//192.1.0.6/General/wazuh/wazuh-agent.msi"  # Using forward slashes for UNC path
+        dest: "C:/Temp/wazuh-agent.msi"  # Using forward slash for local path
       delegate_to: localhost
 
     - name: Download sysmon
       win_get_url:
-        url: "\\192.1.0.6\General\sysmon\sysmon.exe"
-        dest: "C:\Temp\sysmon.exe"
+        url: "//192.1.0.6/General/sysmon/sysmon.exe"  # Using forward slashes for UNC path
+        dest: "C:/Temp/sysmon.exe"  # Using forward slash for local path
       delegate_to: localhost
 
     - name: Download sysmon.xml
       win_get_url:
-        url: "\\192.1.0.6\General\sysmon\sysmon.xml"
-        dest: "C:\Temp\sysmon.xml"
+        url: "//192.1.0.6/General/sysmon/sysmon.xml"  # Using forward slashes for UNC path
+        dest: "C:/Temp/sysmon.xml"  # Using forward slash for local path
       delegate_to: localhost
 
     - name: Install Wazuh Agent
