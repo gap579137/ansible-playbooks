@@ -1,0 +1,87 @@
+---
+- name: Update hosts file
+  hosts: all
+  become: yes # This is necessary because editing /etc/hosts requires root privileges
+  tasks:
+    - name: Add OpenSearch GPG key
+      shell: |
+        curl -o- https://artifacts.opensearch.org/publickeys/opensearch.pgp | gpg --dearmor --batch --yes -o /usr/share/keyrings/opensearch-keyring
+
+    - name: Add OpenSearch repository
+      copy:
+        dest: /etc/apt/sources.list.d/opensearch-2.x.list
+        content: "deb [signed-by=/usr/share/keyrings/opensearch-keyring] https://artifacts.opensearch.org/releases/bundle/opensearch/2.x/apt stable main"
+
+    - name: Update and install required packages
+      apt:
+        update_cache: yes
+        name:
+          - lsb-release
+          - ca-certificates
+          - curl
+          - gnupg2
+        state: present
+        install_recommends: yes
+
+    - name: Add entries to /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ item.ip }} {{ item.host }} {{ item.hostname }}"
+        state: present
+      loop:
+        - { ip: "192.1.3.216", host: "ingest1.fbcad.org", hostname: "ingest1" }
+        - { ip: "192.1.3.217", host: "wzdb.fbcad.org", hostname: "wzdb" }
+        - { ip: "192.1.3.218", host: "idx01.fbcad.org", hostname: "idx01" }
+        - { ip: "192.1.3.219", host: "idx02.fbcad.org", hostname: "idx02" }
+        - { ip: "192.1.3.220", host: "idx03.fbcad.org", hostname: "idx03" }
+        - { ip: "192.1.3.227", host: "graylog.fbcad.org", hostname: "graylog" }
+
+    - name: Set vm.max_map_count to 275000
+      sysctl:
+        name: vm.max_map_count
+        value: "275000"
+        state: present
+        reload: yes
+
+    - name: Apply sysctl changes
+      shell: sysctl -p
+
+    - name: Install OpenSearch
+      apt:
+        name: opensearch
+        state: present
+
+    - name: Enable and start OpenSearch service
+      systemd:
+        name: opensearch
+        enabled: yes
+        state: started
+
+  handlers:
+    - name: Restart OpenSearch
+      systemd:
+        name: opensearch
+        state: restarted
+
+  post_tasks:
+    - name: Check OpenSearch versions available
+      shell: apt list -a opensearch
+      register: opensearch_version
+    - name: Debug OpenSearch versions
+      debug:
+        var: opensearch_version.stdout_lines
+
+    - name: Check OpenSearch service status
+      shell: systemctl status opensearch
+      register: opensearch_status
+    - name: Debug OpenSearch service status
+      debug:
+        var: opensearch_status.stdout_lines
+
+    - name: Check OpenSearch HTTP response
+      shell: curl -X GET https://localhost:9200 -u 'admin:admin' --insecure
+      register: opensearch_http_response
+      ignore_errors: yes
+    - name: Debug OpenSearch HTTP response
+      debug:
+        var: opensearch_http_response.stdout_lines
