@@ -1,6 +1,6 @@
 ---
 - name: Install Wazuh and Sysmon
-  hosts: windows_hosts # Replace with the name of your Windows host group
+  hosts: all # Replace with the name of your Windows host group
   gather_facts: no
   tasks:
     - name: Copy Wazuh agent installer
