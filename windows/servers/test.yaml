@@ -1,32 +1,57 @@
 ---
-- name: Install Wazuh and Sysmon
-  hosts: all # Replace with the name of your Windows host group
+- name: Install Wazuh Agent and Sysmon
+  hosts: all  # Replace 'target_host' with the actual hostname or IP address of the target machine
   gather_facts: no
   tasks:
-    - name: Copy Wazuh agent installer
+    - name: Download Wazuh Agent and Sysmon
+      win_get_url:
+        url: "\\192.1.0.6\General\wazuh\wazuh-agent.msi"
+        dest: "C:\Temp\wazuh-agent.msi"
+      delegate_to: localhost
+
+    - name: Download sysmon
+      win_get_url:
+        url: "\\192.1.0.6\General\sysmon\sysmon.exe"
+        dest: "C:\Temp\sysmon.exe"
+      delegate_to: localhost
+
+    - name: Download sysmon.xml
+      win_get_url:
+        url: "\\192.1.0.6\General\sysmon\sysmon.xml"
+        dest: "C:\Temp\sysmon.xml"
+      delegate_to: localhost
+
+    - name: Install Wazuh Agent
+      win_command: msiexec /i "C:\Temp\wazuh-agent.msi" /q WAZUH_MANAGER='192.1.3.216' WAZUH_REGISTRATION_PASSWORD='Fbcad2801' WAZUH_AGENT_GROUP='windows' WAZUH_REGISTRATION_SERVER='192.1.3.216'
+      async: 3600
+      poll: 0
+
+    - name: Wait for Wazuh Agent installation to complete
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+      register: job_result
+      until: job_result.finished
+      retries: 360
+      delay: 10
+      loop: "{{ ansible_play_batch }}"
+
+    - name: Overwrite ossec.conf
       win_copy:
-        src: "\\\\192.1.0.6\\General\\wazuh\\wazuh-agent.msi"
-        dest: "{{ ansible_env.TEMP }}\\wazuh-agent.msi"
-      become: yes
+        src: "\\192.1.0.6\General\wazuh\ossec.conf"
+        dest: "C:\Program Files (x86)\ossec-agent\ossec.conf"
+      notify: Restart Wazuh Agent
 
-    - name: Install Wazuh agent
-      win_command: msiexec.exe /i "{{ ansible_env.TEMP }}\\wazuh-agent.msi" /q WAZUH_MANAGER='192.1.3.216' WAZUH_REGISTRATION_PASSWORD='Fbcad2801' WAZUH_AGENT_GROUP='windows' WAZUH_REGISTRATION_SERVER='192.1.3.216'
-      become: yes
-
-    - name: Delete Wazuh agent installer
-      win_shell: Remove-Item -Path "{{ ansible_env.TEMP }}\\wazuh-agent.msi" -Force
-      become: yes
-
-    - name: Copy Sysmon installer and config
+    - name: Copy sysmon.xml
       win_copy:
-        src: "\\\\192.1.0.6\\General\\sysmon"
-        dest: "{{ ansible_env.TEMP }}\\sysmon"
-      become: yes
+        src: "C:\Temp\sysmon.xml"
+        dest: "C:\Windows\System32\sysmon.xml"
+      notify: Restart Sysmon
 
-    - name: Install Sysmon
-      win_command: "{{ ansible_env.TEMP }}\\sysmon\\sysmon64.exe -i {{ ansible_env.TEMP }}\\sysmon\\sysmon.xml"
-      become: yes
+  handlers:
+    - name: Restart Wazuh Agent
+      win_service:
+        name: ossec
+        state: restarted
 
-    - name: Delete Sysmon installer
-      win_shell: Remove-Item -Path "{{ ansible_env.TEMP }}\\sysmon" -Recurse -Force
-      become: yes
+    - name: Restart Sysmon
+      win_command: "C:\Windows\System32\sysmon.exe -c C:\Windows\System32\sysmon.xml"
